@@ -14,8 +14,7 @@ Command:
   get-default         Get the default parameter of the environment variable.
   set-default NAME    Set the default parameter.
   unset-default       Unset the default parameter.
-  list	              Show a list of NAME and parameter 
-files.
+  list	              Show a list of NAME and parameter files.
 ```
 
 
