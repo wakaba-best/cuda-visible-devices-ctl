@@ -6,7 +6,7 @@ cuda-visible-devices-ctl [OPTIONS] {COMMAND...}
 ```
 Option:
   -h --help           Show this help
-  -v --version        Show pa version
+  -v --version        Show <command> version
 ```
 
 ```
