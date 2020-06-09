@@ -1,0 +1,228 @@
+#!/bin/bash
+# /usr/bin/cuda-visible-devices-ctl
+
+VERSION="0.1"
+LIST_DIR="/var/cuda-visible-devices/data"
+CONF_FILE="${HOME}/.cuda_visible_devices"
+
+### Usage : help
+function usage() {
+   cat << EOL
+Usage: cuda-visible-devices-ctl [OPTIONS] {COMMAND...} 
+
+Show or Set the CUDA_VISIBLE_DEVICES environment variable command.
+
+Option:
+  -h --help           Show this help
+  -v --version        Show pa version
+
+Command:
+  get-default         Get the default parameter of the environment variable.
+  set-default NAME    Set the default parameter.
+  unset-default       Unset the default parameter.
+  list	              Show a list of NAME and parameter files.
+
+EOL
+}
+
+function show_version() {
+   echo "cuda-visible-devices-ctl"
+   echo "verison ${VERSION}"
+   exit 0
+}
+
+
+### Command
+function get_default() {
+   echo
+   echo "PATH: ${CONF_FILE}"
+   echo
+
+   if [ -f ${CONF_FILE} ] ; then
+      ENV_VAR=`cat ${CONF_FILE} | grep CUDA_VISIBLE_DEVICES | awk '{print $2}'`
+      if [ -z "${ENV_VAR}" ] ; then
+         ENV_VAR="<none>"
+      fi
+   else
+      ENV_VAR="<none>"
+   fi
+
+   echo "Default environment variable : ${ENV_VAR}"
+
+   echo
+   echo "Current environment variable : `printenv | grep CUDA_VISIBLE_DEVICES`"
+
+   echo
+   exit 0
+}
+
+
+function set_default() {
+
+   NAME=$1
+
+   if [ -z `ls ${LIST_DIR} | grep -w "${NAME}"` ] ; then
+      echo "Error: The parameter file <NAME:${NAME}> dose not exist."  
+      echo ">>chack: ${LIST_DIR}"
+      echo
+      exit 1
+   fi
+
+   echo
+   echo "PATH: ${CONF_FILE}"
+   echo
+
+   # Current setting
+   if [ -f ${CONF_FILE} ] ; then
+      CRNT_CONF=`cat ${CONF_FILE} | grep CUDA_VISIBLE_DEVICES`
+      if [ -z "${CRNT_CONF}" ] ; then
+         CRNT_CONF="<none>"
+      fi
+   else
+      CRNT_CONF="<none>"
+   fi
+
+   echo "=== Current defualt setting ==="
+   echo " ${CRNT_CONF}"
+   echo
+
+   # Setting
+   DEVICE_ID=`cat ${LIST_DIR}/${NAME} | head -1`
+
+   echo "=== Set:<NAME:${NAME} ==="
+   echo " export CUDA_VISIBLE_DEVICES=${DEVICE_ID} > ${CONF_FILE}"
+
+   ## save 
+   echo "export CUDA_VISIBLE_DEVICES=${DEVICE_ID}" > ${CONF_FILE}
+   echo
+
+   echo
+   echo "Changed the configuration file."
+   echo "Please execute the following command:"
+   echo
+   echo "  source ${CONF_FILE}"
+   echo
+   echo "<< Current environment variable : `printenv | grep CUDA_VISIBLE_DEVICES` >>"
+
+   echo
+   exit 0
+}
+
+function unset_default() {
+   echo
+   echo "PATH: ${CONF_FILE}"
+   echo
+
+   # Current setting
+   if [ -f ${CONF_FILE} ] ; then
+      CRNT_CONF=`cat ${CONF_FILE} | grep CUDA_VISIBLE_DEVICES`
+      if [ -z "${CRNT_CONF}" ] ; then
+         CRNT_CONF="<none>"
+      fi
+   else
+      CRNT_CONF="<none>"
+   fi
+
+   echo "=== Current defualt setting ==="
+   echo " ${CRNT_CONF}"
+   echo
+
+   # Unsetting
+   echo "=== Unset ==="
+   read -n1 -p "ok? (y/N): " yn
+   if [[ $yn = [yY] ]]; then
+      ## remove1
+      echo
+      echo " unset default setting >> ${CONF_FILE}"
+      echo  > ${CONF_FILE}
+      echo
+   else
+      echo
+      echo "Abort"
+      echo
+      echo "<< Current environment variable : `printenv | grep CUDA_VISIBLE_DEVICES` >>"
+      echo
+      exit 0
+   fi
+
+   echo
+   echo "Changed the configuration file."
+   echo "Please execute the following command:"
+   echo
+   echo "  unset CUDA_VISIBLE_DEVICES"
+   echo
+   echo "<< Current environment variable : `printenv | grep CUDA_VISIBLE_DEVICES` >>"
+
+   echo
+   exit 0
+}
+
+function show_list() {
+   if [ ! -d "${LIST_DIR}" ] ; then
+      echo "Error:This directory dose not exist."  
+      echo ">>chack: ${LIST_DIR}"
+      exit 1
+   fi
+
+   echo
+   echo "PATH: ${LIST_DIR}"
+
+   echo
+   echo "=== Device list ==="
+   nvidia-smi -L
+
+   echo 
+   echo -e "=== <NAME> : <Device ID> ==="
+   for NAME in `ls -1 ${LIST_DIR}`
+   do
+      DEVICE_ID=`cat ${LIST_DIR}/${NAME} | head -1`
+      echo -e " ${NAME} \t: ${DEVICE_ID}"
+   done
+
+   echo
+   exit 0
+}
+
+### Main
+if [ $# -eq 0 ] ; then
+   echo "Error: Invalid argument"
+   usage
+   exit 1
+fi
+
+for ARGS in "$@"
+do
+   case ${ARGS} in
+      get-default )
+	 get_default
+	 ;;
+      set-default )
+         if [ $# -ne 2 ] ; then
+            echo "Error: Invalid argument"
+            usage
+            exit 1
+         fi
+         set_default $2
+	 ;;
+      unset-default )
+         unset_default
+	 ;;
+      list )
+         show_list
+	 ;;
+      -v | --version )
+         show_version
+	 ;;
+      -h | --help )
+         usage
+	 exit 0
+	 ;;
+      *)
+	 echo "Error: Invalid argument"
+         usage
+	 exit 1
+	 ;;
+   esac
+   shift
+done
+
