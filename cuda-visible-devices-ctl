@@ -14,7 +14,7 @@ Show or Set the CUDA_VISIBLE_DEVICES environment variable command.
 
 Option:
   -h --help           Show this help
-  -v --version        Show pa version
+  -v --version        Show <command> version
 
 Command:
   get-default         Get the default parameter of the environment variable.
